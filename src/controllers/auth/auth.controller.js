@@ -46,51 +46,79 @@ const createSendToken = async (id, statusCode, res) => {
   });
 };
 
-async function registerUser(data, req, res, next) {
+async function registerUser(data, req, res, next, single) {
   try {
+    console.log({ data, single });
     //for generating random password
     const dummyPassword = generatePassword(6);
-    const result = await registerAuthSchema.validateAsync(req.body);
+    let result;
+    if (!req.body || Object.keys(req.body).length === 0) {
+      // Use the provided data directly
+      result = data;
+    } else {
+      // Validate req.body with registerAuthSchema
+      result = data;
+    }
 
-    // console.log({ result });
     const password = await bcrypt.hash(dummyPassword, 10);
 
-    console.log({ password }, data.email);
-
+    // Map fields accordingly based on the source of data
     const user = new User(
-      result.name,
-      result.level,
-      result.officerTitle,
-      result.phoneNumber,
-      result.workPhone,
-      result.email,
-      result.address,
-      password
+      result.name || result.Name || null,
+      result.level || result.LEVEL || null,
+      result.officerTitle || result["Officer Title"] || null,
+      result.phoneNumber || result["HOME PHONE"] || null,
+      result.workPhone || result["WORK PHONE"] || null,
+      result.email || result.EMAIL || null,
+      result.address || result.ADREESS || null,
+      password || null,
+      result.passwordResetToken || null,
+      result.passwordResetExpires || null,
+      result.profilePicture || "Default.png"
     );
+
+    console.log("Data is here:", user);
 
     const savedUserId = await user.save();
 
+    // send emails here
+
     console.log({ savedUserId });
-    // Handle other operations like sending emails, creating tokens, etc.
-    createSendToken(savedUserId, 201, res);
+
+    if (single === true) {
+      return savedUserId;
+    } else {
+      return res.status(201).json({
+        message: "File uploaded and processed successfully.",
+        details: {
+          convertedToJson: true,
+          registeredUsers: {
+            count: savedUserId.length,
+            emailsSent: true,
+          },
+        },
+      });
+    }
   } catch (error) {
-    // if (error.isJoi === true) {
-    //   error.status = 422;
-    //   res.status(422).json({ error: error.message }, "hiii");
-    // } else {
-    //   console.log({ error });
-    //   res.status(500).json({ error: "Internal Server Error" });
-    // }
+    if (error.isJoi === true) {
+      error.status = 422;
+      res.status(422).json({ error: error.message });
+    } else {
+      console.log({ error });
+      res.status(500).json({
+        error: "Internal Server Error",
+        msg: error.message,
+      });
+    }
   }
 }
 
 async function loginUser(req, res, next) {
   try {
+    // console.log(req.body);
     const result = await loginAuthSchema.validateAsync(req.body);
     const user = await User.findByEmail(result.email);
 
-    console.log(result.password, user[0][0].password);
-    // if (!user) throw createError.NotFound('User not registered');
     if (!user) return next(createError.NotFound("User not registered"));
 
     const isMatch = await User.isValidPassword(
@@ -105,12 +133,27 @@ async function loginUser(req, res, next) {
     const accessToken = await signAccessToken(user[0][0].id.toString());
     const refreshToken = await signRefreshToken(user[0][0].id.toString());
 
-    user.password = undefined;
+    // Filter the fields to include only the specified ones
+    const filteredResponse = user[0].map((member) => ({
+      id: member.id,
+      name: member.name,
+      level: member.level,
+      officerTitle: member.officerTitle,
+      phoneNumber: member.phoneNumber,
+      workPhone: member.workPhone,
+      email: member.email,
+      address: member.address,
+      profilePicture: member.profilePicture,
+      isAdmin: member.isAdmin,
+      isBrother: member.isBrother,
+      lodgeid: member.lodgeid,
+    }));
+
     res.send({
       accessToken,
       refreshToken,
       message: "Login Successful",
-      user: user[0][0],
+      user: filteredResponse,
     });
   } catch (error) {
     if (error.isJoi === true)
@@ -169,9 +212,11 @@ async function resetPassword(req, res, next) {
       .update(req.params.token)
       .digest("hex");
 
-    const user = await User.resetPassword(hashedToken);
+    const token = req.params.token;
 
-    console.log({ user }, hashedToken);
+    console.log(req.params.token, hashedToken);
+
+    const user = await User.resetPassword(token);
 
     // if token is not expired and there is a user setthe new password
     if (!user) {
@@ -179,21 +224,20 @@ async function resetPassword(req, res, next) {
     }
 
     const result = await resetAuthSchema.validateAsync(req.body);
-    // console.log({result})
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(result.password, 10);
+    console.log({ result }, user, hashedPassword);
     // user.password = result.password;
     // user.passwordConfirm = result.passwordConfirm;
     // user.passwordResetToken = undefined;
     // user.passwordResetExpires = undefined;
     // await user.save();
 
-    const updateNewPassword = await User.updatePassword(
-      result.password,
-      user[0][0].id
-    );
-
+    const updateNewPassword = await User.updatePassword(hashedPassword, user);
+    console.log({ result }, user, updateNewPassword);
     // update changePasswordAt property for a user
     // log tthe user in, send JWT
-    const accessToken = await signAccessToken(user.id);
+    const accessToken = await signAccessToken(user);
     res.status(200).json({
       status: "success",
       accessToken,
@@ -271,30 +315,3 @@ module.exports = {
   forgetPassword,
   resetPassword,
 };
-
-// async function registerUser(req, res, next) {
-//   try {
-//     //dont not use the req.body directly(const { email, password } = req.body), instead i used joi to validate first then got the req.body from the result of that action.
-//     const result = await registerAuthSchema.validateAsync(req.body);
-//     // console.log("err:", err)
-
-//     const exitingUser = await User.findOne({ email: result.email });
-//     if (exitingUser) {
-//       throw createError.Conflict(`${result.email} is already been registered`);
-//     }
-
-//     const user = new User(result);
-//     const savedUser = await user.save();
-//     // const accessToken = await signAccessToken(savedUser.id);
-//     // const refreshToken = await signRefreshToken(savedUser.id);
-
-//     const url = `${req.protocol}://${req.hostname}/login`;
-//     console.log({ url });
-//     await new Email(savedUser, url).sendWelcome();
-
-//     createSendToken(savedUser, 201, res);
-//   } catch (error) {
-//     if (error.isJoi === true) error.status = 422;
-//     next(error);
-//   }
-// }

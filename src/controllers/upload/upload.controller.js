@@ -3,6 +3,7 @@ const { registerUser } = require("../auth/auth.controller");
 
 async function fileUpload(req, res, next) {
   try {
+    console.log("Uploading");
     if (!req.file) {
       return res.status(400).json({ message: "File not found" });
     }
@@ -21,17 +22,18 @@ async function fileUpload(req, res, next) {
     // console.log(jsonData);
     const dataWithEmail = data.filter((item) => item.EMAIL);
 
+    let resp;
     // Register each user with an email
-    for (const user of dataWithEmail) {
-      console.log({ user });
-      await registerUser(user, req, res, next);
+    for (const data of dataWithEmail) {
+      // console.log({ user });
+      resp = await registerUser(data, req, res, next);
     }
 
     // Send the JSON data in response
-    // res.status(200).json({ dataWithEmail, length: dataWithEmail.length });
+    return resp;
   } catch (error) {
     console.error("Error converting Excel to JSON:", error);
-    res.status(500).send("Error converting Excel to JSON.");
+    res.status(500).send({ msg: "Error converting Excel to JSON.", error });
   }
 }
 

@@ -14,7 +14,7 @@ module.exports = class User {
     password,
     passwordResetToken,
     passwordResetExpires,
-    profilePicture = "default.png"
+    profilePicture
   ) {
     this.name = name;
     this.level = level;
@@ -24,8 +24,8 @@ module.exports = class User {
     this.email = email;
     this.address = address;
     this.password = password;
-    this.passwordResetToken = passwordResetToken;
-    this.passwordResetExpires = passwordResetExpires;
+    this.passwordResetToken = passwordResetToken || null;
+    this.passwordResetExpires = passwordResetExpires || null;
     this.profilePicture = profilePicture;
     this.passwordChangeAt = null;
   }
@@ -33,7 +33,7 @@ module.exports = class User {
   async save() {
     try {
       const result = await db.execute(
-        "INSERT INTO users (name, level, officerTitle, phoneNumber, workPhone, email, address, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO users (name, level, officerTitle, phoneNumber, workPhone, email, address, password,passwordResetToken,passwordResetExpires, profilePicture, isBrother) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           this.name,
           this.level,
@@ -43,6 +43,10 @@ module.exports = class User {
           this.email,
           this.address,
           this.password,
+          this.passwordResetToken,
+          this.passwordResetExpires,
+          this.profilePicture,
+          true, // Set isBrother to true
         ]
       );
       const insertId = result[0].insertId;
@@ -57,10 +61,25 @@ module.exports = class User {
     return db.execute("SELECT * FROM users WHERE email = ?", [email]);
   }
 
+  static findByLevel(level) {
+    return db.execute("SELECT * FROM users WHERE level = ?", [level]);
+  }
+
   static async isValidPassword(enteredPassword, storedPassword) {
     try {
       const isMatch = await bcrypt.compare(enteredPassword, storedPassword);
       return isMatch;
+    } catch (error) {
+      throw new Error(error);
+    }
+  }
+
+  static async findById(userId) {
+    try {
+      const result = await db.execute("SELECT * FROM users WHERE id = ?", [
+        userId,
+      ]);
+      return result[0]; // Assuming user data is stored in the first element of the result array
     } catch (error) {
       throw new Error(error);
     }
@@ -93,20 +112,27 @@ module.exports = class User {
 
   static async resetPassword(passwordResetToken) {
     try {
-      await db.execute(
+      console.log({ passwordResetToken: passwordResetToken });
+      const res = await db.execute(
         "SELECT * FROM users WHERE passwordResetToken = ? AND passwordResetExpires > NOW()",
         [passwordResetToken]
       );
+
+      console.log(res[0][0].id);
+      return res[0][0].id;
     } catch (error) {
       throw new Error(error);
     }
   }
 
-  static async updatePassword() {
+  static async updatePassword(newPassword, userId) {
     try {
-      await db.execute(
-        "UPDATE users SET password = 'new_password', passwordResetToken = NULL, passwordResetExpires = NULL WHERE id = user_id"
+      const res = await db.execute(
+        "UPDATE users SET password = ?, passwordResetToken = NULL, passwordResetExpires = NULL WHERE id = ?",
+        [newPassword, userId]
       );
+
+      return res.affectedRows;
     } catch (error) {
       throw new Error(error);
     }

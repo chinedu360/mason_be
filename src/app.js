@@ -3,7 +3,6 @@ const http = require("http");
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
-const multer = require("multer");
 const createError = require("http-errors");
 const rateLimit = require("express-rate-limit");
 const helmet = require("helmet");
@@ -11,6 +10,7 @@ var xss = require("xss-clean");
 const mongoSanitize = require("express-mongo-sanitize");
 var hpp = require("hpp");
 const swaggerUi = require("swagger-ui-express");
+var bodyParser = require("body-parser");
 require("dotenv").config();
 
 const db = require("./services/mysql");
@@ -28,10 +28,15 @@ require("./helpers/init_redis");
 //   });
 
 const userRouter = require("./routes/user/user.router");
-const uploadRouter = require("./routes/upload/upload.router");
 const lodgedetailsRouter = require("./routes/lodgedetails/lodgedetails");
+const blogRouter = require("./routes/blog/blog");
 const NewsletterRouter = require("./routes/newsletter/newsletter.router");
-const recordRouter = require("./routes/record/record.router");
+const sliderRouter = require("./routes/slider/slider");
+const articleRouter = require("./routes/article/article");
+const subtopicRouter = require("./routes/subtopic/subtopic");
+const calenderRouter = require("./routes/calender/calender");
+const officeRouter = require("./routes/officer/officer");
+const memberRouter = require("./routes/member/member");
 
 const app = express();
 
@@ -42,19 +47,8 @@ app.set("views", path.join(__dirname, "views"));
 app.use(express.static(path.join(__dirname, "..", "public")));
 //if the client is using a form url encoded data(may never use this for an api)
 app.use(express.urlencoded({ extended: true }));
-// handling file uploadsx
-
-const storage = multer.diskStorage({
-  // notice you are calling the multer.diskStorage() method here, not multer()
-  // destination: function (req, file, cb) {
-  //   cb(null, "uploads/");
-  // },
-  filename: function (req, file, cb) {
-    cb(null, file.fieldname + "-" + Date.now());
-  },
-});
-// const upload = multer({storage}); //provide the return value from
-app.use(multer({ storage }).single("file"));
+//Body parser. for reading data from the body into req.body
+app.use(express.json({ limit: "10kb" }));
 
 const port = process.env.PORT || 3007;
 
@@ -75,9 +69,6 @@ const limiter = rateLimit({
   message: "Too many request, please try again after an hour",
 });
 app.use("/api", limiter);
-
-//Body parser. for reading data from the body into req.body
-app.use(express.json({ limit: "10kb" }));
 
 // data sanitization reading against NoSQL query injections
 app.use(mongoSanitize());
@@ -101,7 +92,7 @@ app.use("/apidocs", swaggerUi.setup(swaggerDocumentation));
 // app.get('/',
 //     (req, res) => {
 //     // console.log(req.headers['authorization'])
-//     res.send('<h1>The Cultiverly Poultry Management System!!!</h1> <p>Version 1.3.0</p>')
+//     res.send('<h1>The Masons</h1> <p>Version 1.3.0</p>')
 // })
 
 // app.get("/", verifyAccessToken, authrized("admin", "farmer"), (req, res) => {
@@ -130,8 +121,8 @@ app.get("/users", (req, res) => {
   res.send([
     {
       name: "John",
-      farm: "Johnny's Farm",
-      type: "Layers",
+      farm: "Johnny's Bth",
+      type: "officer",
     },
   ]);
 });
@@ -146,11 +137,17 @@ app.get("/users", (req, res) => {
 //         req: req.headers['authorization']
 //     })
 // })
+
 app.use("/api/v1/auth", userRouter);
-app.use("/api/v1/", uploadRouter);
 app.use("/api/v1", lodgedetailsRouter);
 app.use("/api/v1/", NewsletterRouter);
-app.use("/api/v1/", recordRouter);
+app.use("/api/v1/", blogRouter);
+app.use("/api/v1/", sliderRouter);
+app.use("/api/v1/", articleRouter);
+app.use("/api/v1/", subtopicRouter);
+app.use("/api/v1/", calenderRouter);
+app.use("/api/v1/", officeRouter);
+app.use("/api/v1/", memberRouter);
 
 app.use((req, res, next) => {
   // const error = new Error('Not Found')

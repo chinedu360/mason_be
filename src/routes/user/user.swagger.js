@@ -1,59 +1,3 @@
-const registerUser = {
-  tags: ["Auth"],
-  description: "Register a new user",
-  requestBody: {
-    content: {
-      "application/json": {
-        schema: {
-          type: "object",
-          properties: {
-            name: { type: "string" },
-            email: { type: "string" },
-            password: { type: "string" },
-            passwordConfirm: { type: "string" },
-          },
-          required: ["name", "email", "password", "passwordConfirm"],
-          example: {
-            name: "John Doe",
-            email: "johndoe@example.com",
-            password: "password",
-            passwordConfirm: "password",
-          },
-        },
-      },
-    },
-    required: true,
-  },
-  responses: {
-    200: {
-      description: "OK",
-      content: {
-        "application/json": {
-          schema: {
-            type: "object",
-            properties: {
-              status: { type: "string" },
-              message: { type: "string" },
-              accessToken: { type: "string" },
-              refreshToken: { type: "string" },
-              data: {
-                type: "object",
-                properties: {
-                  name: { type: "string" },
-                  email: { type: "string" },
-                  role: { type: "string" },
-                  profilePicture: { type: "string" },
-                  _id: { type: "string" },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  },
-};
-
 const loginUser = {
   tags: ["Auth"],
   description: "Login a new user",
@@ -68,8 +12,8 @@ const loginUser = {
           },
           required: ["email", "password"],
           example: {
-            email: "johndoe@example.com",
-            password: "password",
+            email: "okere360@gmail.com",
+            password: "fifa7218c!",
           },
         },
       },
@@ -146,6 +90,17 @@ const forgotPasswordUser = {
 const resetPasswordUser = {
   tags: ["Auth"],
   description: "Reset Password",
+  parameters: [
+    {
+      name: "token",
+      in: "path",
+      description: "token from email user clicked",
+      required: true,
+      schema: {
+        type: "string",
+      },
+    },
+  ],
   requestBody: {
     content: {
       "application/json": {
@@ -223,9 +178,6 @@ const logoutUser = {
 };
 
 const userRouteDoc = {
-  "/api/v1/auth/register": {
-    post: registerUser,
-  },
   "/api/v1/auth/login": {
     post: loginUser,
   },
@@ -235,7 +187,7 @@ const userRouteDoc = {
   "/api/v1/auth/refresh-token": {
     post: refreshTokenUser,
   },
-  "/api/v1/auth/resetPassword/:token": {
+  "/api/v1/auth/resetPassword/{token}": {
     patch: resetPasswordUser,
   },
   "/api/v1/auth/logout": {

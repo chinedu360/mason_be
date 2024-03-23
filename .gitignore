@@ -8,13 +8,9 @@
 
 # Optional npm cache directory
 .npm
+/uploads
 
 ./ReadMe.md
-
-# json
-/vaccine.json
-/vaccineData.json
-/src/controllers/vaccine/vaccineData.json
 
 # production
 /build
