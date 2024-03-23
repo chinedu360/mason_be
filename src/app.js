@@ -57,9 +57,21 @@ app.use(helmet());
 
 app.use(cors());
 
-//dev loggin
-if (`${process.env.NODE_ENV}` === "development") {
-  app.use(morgan("combined"));
+// Define Morgan logging formats
+const developmentFormat = "dev"; // Use the 'dev' format for development
+const productionFormat = "combined"; // Use the 'combined' format for production
+
+// Morgan middleware for development
+const morganDev = morgan(developmentFormat);
+
+// Morgan middleware for production
+const morganProd = morgan(productionFormat);
+
+// Use Morgan middleware based on environment
+if (process.env.NODE_ENV === "prod") {
+  app.use(morganProd);
+} else {
+  app.use(morganDev);
 }
 
 //limit request from same API
