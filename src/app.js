@@ -14,7 +14,7 @@ var bodyParser = require("body-parser");
 require("dotenv").config();
 
 const db = require("./services/mysql");
-const { mongoConnect, mongoDisconnect } = require("./services/mongo");
+// const { mongoConnect, mongoDisconnect } = require("./services/mongo");
 const { verifyAccessToken, authrized } = require("../src/helpers/jwt_helper");
 const swaggerDocumentation = require("../src/utils/swagger/api-docs");
 require("./helpers/init_redis");
