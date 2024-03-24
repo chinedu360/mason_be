@@ -52,6 +52,10 @@ app.use(express.json({ limit: "10kb" }));
 
 const port = process.env.PORT || 3007;
 
+//swagger docs
+app.use("/apidocs", swaggerUi.serve);
+app.use("/apidocs", swaggerUi.setup(swaggerDocumentation));
+
 // Security Http Headers
 app.use(helmet());
 
@@ -96,10 +100,6 @@ app.use(
     whitelist: ["duration", "feed"],
   })
 );
-
-//swagger docs
-app.use("/apidocs", swaggerUi.serve);
-app.use("/apidocs", swaggerUi.setup(swaggerDocumentation));
 
 // app.get('/',
 //     (req, res) => {
