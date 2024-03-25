@@ -19,13 +19,13 @@ const swaggerDocumentation = {
   },
   servers: [
     {
-      url: "http://localhost:3007",
-      description: "dev",
+      url: process.env.SWAGGERURL,
+      // description: "dev",
     },
-    {
-      url: "http://13.53.86.164:3007",
-      description: "prod",
-    },
+    // {
+    //   url: swaggerUrl,
+    //   description: "prod",
+    // },
   ],
   paths: {
     ...userRouteDoc,
