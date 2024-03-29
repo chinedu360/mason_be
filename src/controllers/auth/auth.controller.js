@@ -79,6 +79,7 @@ async function registerUser(data, req, res, next, single) {
     console.log("Data is here:", user);
 
     const savedUserId = await user.save();
+    const forgotPasswordURL = `${process.env.FRONTEND_URL}/forgetpassword`;
 
     // send emails here
     await sendEmail({
@@ -89,7 +90,7 @@ async function registerUser(data, req, res, next, single) {
            Thank you for registering with us!<br/>
            Your temporary password is: ${dummyPassword}<br/><br/>
            Please login to your account and change your password.<br/><br/>
-           Visit the URL to change your password: ${process.env.FRONTEND_URL}/forgetpassword <br/><br/>
+           Visit the URL to change your password: <a href="${forgotPasswordURL}">${forgotPasswordURL}</a> <br/><br/>
            Best regards,<br/>
            Your Application Team`,
     });
