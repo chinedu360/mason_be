@@ -139,16 +139,18 @@ app.get("/users", (req, res) => {
   ]);
 });
 
-// app.get('/',
-//     verifyAccessToken,
-//     authrized('admin', 'farmer'),
-//     (req, res) => {
-//     // console.log(req.headers['authorization'])
-//     res.json({
-//         message: 'Welcome to my Home!!!',
-//         req: req.headers['authorization']
-//     })
-// })
+app.get(
+  "/",
+  // verifyAccessToken,
+  // authrized("admin", "farmer"),
+  (req, res) => {
+    // console.log(req.headers['authorization'])
+    res.json({
+      message: "Welcome to my Home!!!",
+      req: req.headers["authorization"],
+    });
+  }
+);
 
 app.use("/api/v1/auth", userRouter);
 app.use("/api/v1", lodgedetailsRouter);

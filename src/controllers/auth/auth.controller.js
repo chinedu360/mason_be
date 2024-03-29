@@ -14,9 +14,8 @@ const {
   verifyRefreshToken,
 } = require("../../helpers/jwt_helper");
 const redisClient = require("../../helpers/init_redis");
-const sendEmail = require("../../utils/email/email");
-const Email = require("../../utils/email/email");
 const { generatePassword } = require("../../helpers/generateRandomPassword");
+const { sendEmail } = require("../../utils/email/email");
 
 const createSendToken = async (id, statusCode, res) => {
   console.log(id.toString());
@@ -82,6 +81,18 @@ async function registerUser(data, req, res, next, single) {
     const savedUserId = await user.save();
 
     // send emails here
+    await sendEmail({
+      from: "staff@freethinkerinstitute.org",
+      to: user.email,
+      subject: "Welcome to Our Application!",
+      html: `Hello ${user.name},<br/><br/>
+           Thank you for registering with us!<br/>
+           Your temporary password is: ${dummyPassword}<br/><br/>
+           Please login to your account and change your password.<br/><br/>
+           Visit the URL to change your password: ${process.env.FRONTEND_URL}/forgetpassword <br/><br/>
+           Best regards,<br/>
+           Your Application Team`,
+    });
 
     console.log({ savedUserId });
 
@@ -167,24 +178,42 @@ async function forgetPassword(req, res, next) {
     // get user based on email
     const result = await forgetPasswordSchema.validateAsync(req.body);
     const user = await User.findByEmail(result.email);
+    console.log(user[0]);
     // check if the user exit
-    if (!user) {
+    if (user[0].length < 1)
       return next(
         createError.NotFound("There is no user with email " + req.body.email)
       );
-    }
 
     //generate random reset token(do this in the user mongoose schema)
     const resetToken = await User.createPasswordResetToken(result.email);
 
     //send the email notification
-    const resetURL = `${req.protocol}://${req.get(
-      "host"
-    )}/api/v1/auth/resetPassword/${resetToken}`;
+    const resetURL = `${process.env.FRONTEND_URL}/newpassword/${resetToken}`;
 
-    console.log({ resetURL });
+    const emailTemplate = `
+      <html>
+      <body>
+        <p>Hello ${user[0][0].name},</p>
+        <p>We received a request to reset your password. If you didn't make this request, you can ignore this email.</p>
+        <p>To reset your password, click the following link:</p>
+        <a href="${resetURL}">${resetURL}</a>
+        <p>Please note that this link is valid for 20 minutes only.</p>
+        <p>If you have any questions, please contact our support team.</p>
+        <p>Best regards,<br/>Your Application Team</p>
+      </body>
+      </html>
+    `;
 
-    // await new Email(user, resetURL).sendResetPassword();
+    // console.log({ resetURL }, user[0][0].name, user[0][0].email);
+
+    // Send the password reset email
+    await sendEmail({
+      from: "staff@freethinkerinstitute.org",
+      to: user[0][0].email,
+      subject: "Password Reset Request",
+      html: emailTemplate,
+    });
 
     res.status(200).json({
       status: "success",

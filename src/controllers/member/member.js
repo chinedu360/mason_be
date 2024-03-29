@@ -52,12 +52,10 @@ async function createMember(req, res, next) {
       (single = true)
     );
 
-    return res
-      .status(200)
-      .json({
-        message: "User registered successfully",
-        singleUser: singleUser,
-      });
+    return res.status(200).json({
+      message: "User registered successfully",
+      singleUser: singleUser,
+    });
   } catch (error) {
     console.error("Error creating member:", error); // Log error
     res.status(500).send({ message: "Error.", error });
@@ -95,7 +93,7 @@ async function getMemebers(req, res, next) {
       data: filteredResponse,
     });
 
-    return res.status(200).json({ message: filteredResponse });
+    // return res.status(200).json({ message: filteredResponse });
   } catch (error) {
     return res
       .status(404)
