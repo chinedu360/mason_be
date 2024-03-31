@@ -28,7 +28,13 @@ const forgetPasswordSchema = Joi.object({
 
 const resetAuthSchema = Joi.object({
   password: Joi.string().min(8).required(),
-  passwordConfirm: Joi.ref("password"),
+  passwordConfirm: Joi.string()
+    .valid(Joi.ref("password"))
+    .min(8)
+    .required()
+    .messages({
+      "any.only": "Passwords do not match",
+    }),
 });
 
 const newsletterValidationSchema = Joi.object({

@@ -1,4 +1,5 @@
 const Members = require("../../models/members/members");
+const User = require("../../models/user/user.modal");
 const { registerUser } = require("../auth/auth.controller");
 
 async function createMember(req, res, next) {
@@ -13,9 +14,9 @@ async function createMember(req, res, next) {
       address,
     } = req.body;
 
-    console.log("Creating member...");
-    console.log("Request body:", req.body); // Log request body
-    console.log("Files uploaded:", req.files); // Log uploaded files
+    // console.log("Creating member...");
+    // console.log("Request body:", req.body); // Log request body
+    // console.log("Files uploaded:", req.files); // Log uploaded files
 
     let profilePicture = "Default.png"; // Default value
 
@@ -23,7 +24,7 @@ async function createMember(req, res, next) {
       profilePicture = req.files[0].location;
     }
 
-    console.log("Profile picture:", profilePicture); // Log profile picture value
+    // console.log("Profile picture:", profilePicture); // Log profile picture value
 
     let data = {
       name,
@@ -38,10 +39,16 @@ async function createMember(req, res, next) {
       // passwordResetExpires,
     };
 
-    console.log("Data:", data); // Log data object
+    // console.log("Data:", data); // Log data object
 
     if (!name || !email) {
       return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // Check if the user already exists
+    const isUser = await User.findByEmail(data.email);
+    if (isUser[0][0]) {
+      return res.status(409).json({ message: "User already exists" });
     }
 
     const singleUser = await registerUser(

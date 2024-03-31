@@ -66,8 +66,10 @@ module.exports = class User {
   }
 
   static async isValidPassword(enteredPassword, storedPassword) {
+    console.log({ enteredPassword, storedPassword });
     try {
       const isMatch = await bcrypt.compare(enteredPassword, storedPassword);
+      console.log({ isMatch });
       return isMatch;
     } catch (error) {
       throw new Error(error);
@@ -101,10 +103,10 @@ module.exports = class User {
 
       await db.execute(
         "UPDATE users SET passwordResetToken = ?, passwordResetExpires = ? WHERE email = ?",
-        [hashedToken, resetExpires, email]
+        [resetToken, resetExpires, email]
       );
 
-      return hashedToken;
+      return resetToken;
     } catch (error) {
       throw new Error(error);
     }
@@ -112,16 +114,26 @@ module.exports = class User {
 
   static async resetPassword(passwordResetToken) {
     try {
-      console.log({ passwordResetToken: passwordResetToken });
       const res = await db.execute(
         "SELECT * FROM users WHERE passwordResetToken = ? AND passwordResetExpires > NOW()",
         [passwordResetToken]
       );
 
-      console.log(res[0][0].id);
-      return res[0][0].id;
+      // Check if any rows were returned
+      if (res[0].length === 0) {
+        return new Error("Token expired or invalid");
+      }
+
+      // Extract the user ID from the result
+      const userId = res[0][0].id;
+
+      return userId;
     } catch (error) {
-      throw new Error(error);
+      // Log the error for debugging
+      console.error(error);
+
+      // Throw a custom error to be handled by the caller
+      return new Error("Error resetting password");
     }
   }
 

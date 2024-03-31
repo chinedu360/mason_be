@@ -132,6 +132,7 @@ async function loginUser(req, res, next) {
     const user = await User.findByEmail(result.email);
 
     if (!user) return next(createError.NotFound("User not registered"));
+    console.log(user);
 
     const isMatch = await User.isValidPassword(
       result.password,
@@ -236,50 +237,57 @@ async function forgetPassword(req, res, next) {
 
 async function resetPassword(req, res, next) {
   try {
-    //get user based on the token
-    const hashedToken = crypto
-      .createHash("sha256")
-      .update(req.params.token)
-      .digest("hex");
-
     const token = req.params.token;
 
-    console.log(req.params.token, hashedToken);
+    const userId = await User.resetPassword(token);
 
-    const user = await User.resetPassword(token);
-
-    // if token is not expired and there is a user setthe new password
-    if (!user) {
+    // if token is not expired and there is a user set the new password
+    if (!userId) {
       return next(createError.BadRequest("Token expired"));
     }
 
     const result = await resetAuthSchema.validateAsync(req.body);
+    console.log(result.password);
     // Hash the new password
     const hashedPassword = await bcrypt.hash(result.password, 10);
-    console.log({ result }, user, hashedPassword);
-    // user.password = result.password;
-    // user.passwordConfirm = result.passwordConfirm;
-    // user.passwordResetToken = undefined;
-    // user.passwordResetExpires = undefined;
-    // await user.save();
 
-    const updateNewPassword = await User.updatePassword(hashedPassword, user);
-    console.log({ result }, user, updateNewPassword);
-    // update changePasswordAt property for a user
+    const updateNewPassword = await User.updatePassword(hashedPassword, userId);
+
+    // find user by id
+    const userInfo = await User.findById(userId);
+    console.log(userInfo[0]);
+
+    // Prepare the response
+    const filteredResponse = {
+      id: userInfo[0].id,
+      name: userInfo[0].name,
+      level: userInfo[0].level,
+      officerTitle: userInfo[0].officerTitle,
+      phoneNumber: userInfo[0].phoneNumber,
+      workPhone: userInfo[0].workPhone,
+      email: userInfo[0].email,
+      address: userInfo[0].address,
+      profilePicture: userInfo[0].profilePicture,
+      isAdmin: userInfo[0].isAdmin,
+      isBrother: userInfo[0].isBrother,
+      lodgeid: userInfo[0].lodgeid,
+    };
+
     // log tthe user in, send JWT
-    const accessToken = await signAccessToken(user);
+    const accessToken = await signAccessToken(userId.toString());
+    const refreshToken = await signRefreshToken(userId.toString());
     res.status(200).json({
       status: "success",
+      message: "Password successfully updated. You are now logged in.",
       accessToken,
+      refreshToken,
+      user: filteredResponse,
     });
   } catch (error) {
     console.log(error);
     res.status(500).json({
       error,
     });
-    // return next(
-    //   createError.InternalServerError("Make sure your passward matches")
-    // );
   }
 }
 
