@@ -6,11 +6,20 @@ module.exports = class Officer {
     this.level = level;
   }
 
-  static async getOfficer(page, limit) {
+  static async getOfficer(page, limit, isXlxsDownload) {
     try {
       const offset = (page - 1) * limit;
-      const sql =
-        "SELECT * FROM users WHERE level IS NOT NULL ORDER BY id DESC  LIMIT ? OFFSET ?";
+      let sql;
+      if (isXlxsDownload === "true") {
+        // console.log("Download");
+        // sql = "SELECT * FROM users WHERE level IS NOT NULL ORDER BY id DESC";
+        sql = "SELECT * FROM users";
+      } else {
+        // console.log("Not Download");
+        sql =
+          "SELECT * FROM users WHERE level IS NOT NULL ORDER BY id DESC  LIMIT ? OFFSET ?";
+      }
+
       const result = await db.execute(sql, [String(limit), String(offset)]);
 
       return result[0];

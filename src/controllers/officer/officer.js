@@ -2,10 +2,20 @@ const Officer = require("../../models/officer/officer");
 
 const getAllOfficer = async (req, res) => {
   try {
+    const isXlxsDownload = req.query.isxlxsdownload;
+    console.log("isXlxsDownload:", isXlxsDownload);
+
+    // let page;
+    // let limit;
+
+    // if (!isXlxsDownload) {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    // }
 
-    const officers = await Officer.getOfficer(page, limit);
+    console.log({ page, limit });
+
+    const officers = await Officer.getOfficer(page, limit, isXlxsDownload);
 
     // Filter the fields to include only the specified ones
     const filteredResponse = officers.map((member) => ({

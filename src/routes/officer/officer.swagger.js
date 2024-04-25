@@ -22,6 +22,16 @@ const getAllOfficer = {
         default: 10,
       },
     },
+    {
+      name: "isxlxsdownload",
+      in: "query",
+      description: "Determine if its xlxs download or not",
+      required: false,
+      schema: {
+        type: "boolean",
+        default: false,
+      },
+    },
   ],
   responses: {
     200: {
@@ -74,7 +84,7 @@ const getAllOfficer = {
   security: [
     {
       // This indicates that the endpoint requires an access token for authentication
-      BearerAuth: [],
+      Authorization: [],
     },
   ],
 };

@@ -71,7 +71,7 @@ async function createMember(req, res, next) {
 
 async function getMemebers(req, res, next) {
   try {
-    const page = parseInt(req.query.page) || 1;
+    const page = parseInt(req.query.page) || 0;
     const limit = parseInt(req.query.limit) || 10;
 
     const members = await Members.getMembers(page, limit);

@@ -7,6 +7,7 @@ const {
   loginAuthSchema,
   registerAuthSchema,
   forgetPasswordSchema,
+  emailValidationSchema,
 } = require("../../helpers/validation_schema");
 const {
   signAccessToken,
@@ -16,6 +17,7 @@ const {
 const redisClient = require("../../helpers/init_redis");
 const { generatePassword } = require("../../helpers/generateRandomPassword");
 const { sendEmail } = require("../../utils/email/email");
+const { encryptData, decryptData } = require("../../helpers/encDec");
 
 const createSendToken = async (id, statusCode, res) => {
   console.log(id.toString());
@@ -80,6 +82,10 @@ async function registerUser(data, req, res, next, single) {
 
     const savedUserId = await user.save();
     const forgotPasswordURL = `${process.env.FRONTEND_URL}/forgetpassword`;
+    const encrptedEmail = encryptData(`${user.email}`);
+    console.log("Data is here:", user, user.email, encrptedEmail);
+    const encodedEmail = encodeURIComponent(`${encrptedEmail}`);
+    const newPasswordsURL = `${process.env.FRONTEND_URL}/newpassword/${encodedEmail}`;
 
     // send emails here
     await sendEmail({
@@ -90,7 +96,7 @@ async function registerUser(data, req, res, next, single) {
            Thank you for registering with us!<br/>
            Your temporary password is: ${dummyPassword}<br/><br/>
            Please login to your account and change your password.<br/><br/>
-           Visit the URL to change your password: <a href="${forgotPasswordURL}">${forgotPasswordURL}</a> <br/><br/>
+           Visit the URL to change your password: <a href="${newPasswordsURL}">${newPasswordsURL}</a> <br/><br/>
            Best regards,<br/>
            Your Application Team`,
     });
@@ -146,21 +152,23 @@ async function loginUser(req, res, next) {
     const accessToken = await signAccessToken(user[0][0].id.toString());
     const refreshToken = await signRefreshToken(user[0][0].id.toString());
 
-    // Filter the fields to include only the specified ones
-    const filteredResponse = user[0].map((member) => ({
-      id: member.id,
-      name: member.name,
-      level: member.level,
-      officerTitle: member.officerTitle,
-      phoneNumber: member.phoneNumber,
-      workPhone: member.workPhone,
-      email: member.email,
-      address: member.address,
-      profilePicture: member.profilePicture,
-      isAdmin: member.isAdmin,
-      isBrother: member.isBrother,
-      lodgeid: member.lodgeid,
-    }));
+    const userData = user[0][0];
+
+    // Prepare the response object
+    const filteredResponse = {
+      id: userData.id,
+      name: userData.name,
+      level: userData.level,
+      officerTitle: userData.officerTitle,
+      phoneNumber: userData.phoneNumber,
+      workPhone: userData.workPhone,
+      email: userData.email,
+      address: userData.address,
+      profilePicture: userData.profilePicture,
+      isAdmin: userData.isAdmin,
+      isBrother: userData.isBrother,
+      lodgeid: userData.lodgeid,
+    };
 
     res.send({
       accessToken,
@@ -239,50 +247,125 @@ async function resetPassword(req, res, next) {
   try {
     const token = req.params.token;
 
-    const userId = await User.resetPassword(token);
+    console.log({ token });
 
-    // if token is not expired and there is a user set the new password
-    if (!userId) {
-      return next(createError.BadRequest("Token expired"));
+    // Decrypt the token
+    const data = decryptData(token);
+
+    // Validate the decrypted data as an email address
+    const { error } = await emailValidationSchema.validateAsync({ data });
+
+    if (error) {
+      // If validation fails, the token is not an email address
+      // Proceed with resetPassword since it's not a valid email
+      console.log("Token is not a valid email address");
+
+      const userId = await User.resetPassword(token);
+
+      // if token is not expired and there is a user set the new password
+      if (!userId) {
+        return next(createError.BadRequest("Token expired"));
+      }
+
+      // Rest of your code
+      const result = await resetAuthSchema.validateAsync(req.body);
+      console.log(result.password);
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(result.password, 10);
+
+      const updateNewPassword = await User.updatePassword(
+        hashedPassword,
+        userId
+      );
+
+      // find user by id
+      const userInfo = await User.findById(userId);
+      console.log(userInfo[0]);
+
+      // Prepare the response
+      const filteredResponse = {
+        id: userInfo[0].id,
+        name: userInfo[0].name,
+        level: userInfo[0].level,
+        officerTitle: userInfo[0].officerTitle,
+        phoneNumber: userInfo[0].phoneNumber,
+        workPhone: userInfo[0].workPhone,
+        email: userInfo[0].email,
+        address: userInfo[0].address,
+        profilePicture: userInfo[0].profilePicture,
+        isAdmin: userInfo[0].isAdmin,
+        isBrother: userInfo[0].isBrother,
+        lodgeid: userInfo[0].lodgeid,
+      };
+
+      // log tthe user in, send JWT
+      const accessToken = await signAccessToken(userId.toString());
+      const refreshToken = await signRefreshToken(userId.toString());
+      res.status(200).json({
+        status: "success",
+        message: "Password successfully updated. You are now logged in.",
+        accessToken,
+        refreshToken,
+        user: filteredResponse,
+      });
+    } else {
+      // Validation successful, the token is a valid email address
+      console.log("Token is a valid email address, skipping resetPassword");
+
+      const email = await emailValidationSchema.validateAsync({ data });
+      console.log(email.data);
+
+      const resp = await User.findByEmail(email.data);
+
+      console.log(resp[0][0], resp[0][0].id);
+
+      // if token is not expired and there is a user set the new password
+      if (!resp) {
+        return next(createError.BadRequest("No user with such email"));
+      }
+
+      // Rest of your code
+      const result = await resetAuthSchema.validateAsync(req.body);
+      console.log(result.password);
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(result.password, 10);
+
+      const updateNewPassword = await User.updatePassword(
+        hashedPassword,
+        resp[0][0].id
+      );
+
+      // find user by id
+      const userInfo = await User.findById(resp[0][0].id);
+      console.log(userInfo[0]);
+
+      // Prepare the response
+      const filteredResponse = {
+        id: userInfo[0].id,
+        name: userInfo[0].name,
+        level: userInfo[0].level,
+        officerTitle: userInfo[0].officerTitle,
+        phoneNumber: userInfo[0].phoneNumber,
+        workPhone: userInfo[0].workPhone,
+        email: userInfo[0].email,
+        address: userInfo[0].address,
+        profilePicture: userInfo[0].profilePicture,
+        isAdmin: userInfo[0].isAdmin,
+        isBrother: userInfo[0].isBrother,
+        lodgeid: userInfo[0].lodgeid,
+      };
+
+      // log tthe user in, send JWT
+      const accessToken = await signAccessToken(resp[0][0].id.toString());
+      const refreshToken = await signRefreshToken(resp[0][0].id.toString());
+      res.status(200).json({
+        status: "success",
+        message: "Password successfully updated. You are now logged in.",
+        accessToken,
+        refreshToken,
+        user: filteredResponse,
+      });
     }
-
-    const result = await resetAuthSchema.validateAsync(req.body);
-    console.log(result.password);
-    // Hash the new password
-    const hashedPassword = await bcrypt.hash(result.password, 10);
-
-    const updateNewPassword = await User.updatePassword(hashedPassword, userId);
-
-    // find user by id
-    const userInfo = await User.findById(userId);
-    console.log(userInfo[0]);
-
-    // Prepare the response
-    const filteredResponse = {
-      id: userInfo[0].id,
-      name: userInfo[0].name,
-      level: userInfo[0].level,
-      officerTitle: userInfo[0].officerTitle,
-      phoneNumber: userInfo[0].phoneNumber,
-      workPhone: userInfo[0].workPhone,
-      email: userInfo[0].email,
-      address: userInfo[0].address,
-      profilePicture: userInfo[0].profilePicture,
-      isAdmin: userInfo[0].isAdmin,
-      isBrother: userInfo[0].isBrother,
-      lodgeid: userInfo[0].lodgeid,
-    };
-
-    // log tthe user in, send JWT
-    const accessToken = await signAccessToken(userId.toString());
-    const refreshToken = await signRefreshToken(userId.toString());
-    res.status(200).json({
-      status: "success",
-      message: "Password successfully updated. You are now logged in.",
-      accessToken,
-      refreshToken,
-      user: filteredResponse,
-    });
   } catch (error) {
     console.log(error);
     res.status(500).json({

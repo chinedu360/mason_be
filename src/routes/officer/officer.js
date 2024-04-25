@@ -11,7 +11,11 @@ const { verifyAccessToken } = require("../../helpers/jwt_helper");
 const officerRouter = express.Router();
 const upload = multer({ dest: process.env.UPLOAD_DIR });
 
-officerRouter.get("/officers", verifyAccessToken, getAllOfficer);
+officerRouter.get(
+  "/officers",
+  // verifyAccessToken,
+  getAllOfficer
+);
 officerRouter.patch("/officers/:id", verifyAccessToken, updateOfficer);
 officerRouter.patch(
   "/officers/:id/level",

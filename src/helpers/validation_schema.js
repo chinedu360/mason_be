@@ -17,6 +17,10 @@ const registerAuthSchema = Joi.object({
   passwordChangedAt: Joi.date(),
 });
 
+const emailValidationSchema = Joi.object({
+  data: Joi.string().email(),
+});
+
 const loginAuthSchema = Joi.object({
   email: Joi.string().email().lowercase().required(),
   password: Joi.string().min(8).required(),
@@ -59,4 +63,5 @@ module.exports = {
   resetAuthSchema,
   newsletterValidationSchema,
   recordValidationSchema,
+  emailValidationSchema,
 };
