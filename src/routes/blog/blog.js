@@ -15,13 +15,13 @@ const blogPostRouter = express.Router();
 blogPostRouter.post(
   "/blog",
   verifyAccessToken,
-  uploadToS3("imasons-uploads").any(),
+  uploadToS3("masons-uploads").any(),
   createBlogPost
 );
 blogPostRouter.patch(
   "/blog/:id",
   verifyAccessToken,
-  uploadToS3("imasons-uploads").any(),
+  uploadToS3("masons-uploads").any(),
   updateBlogPost
 );
 blogPostRouter.delete("/blog/:id", verifyAccessToken, deleteBlogPost);

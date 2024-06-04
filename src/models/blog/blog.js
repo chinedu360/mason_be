@@ -54,7 +54,8 @@ module.exports = class BlogPost {
   static async findByBlogPostByAuthorId(authorId, page, limit) {
     try {
       const offset = (page - 1) * limit;
-      const sql = "SELECT * FROM BlogPost WHERE author_id = ? LIMIT ? OFFSET ?";
+      const sql =
+        "SELECT * FROM BlogPost WHERE author_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?";
       const [rows, fields] = await db.execute(sql, [
         String(authorId),
         String(limit),
@@ -124,13 +125,16 @@ module.exports = class BlogPost {
       const [checkRows, checkFields] = await db.execute(checkSql, [Id]);
 
       if (checkRows.length === 0) {
-        return "Blog post with the provided ID does not exist"; // Return a message indicating the blog post does not exist
+        return {
+          success: false,
+          message: "Blog post with the provided ID does not exist",
+        }; // Return a message indicating the blog post does not exist
       }
 
       const deleteSql = "DELETE FROM BlogPost WHERE id = ?";
       const [rows, fields] = await db.execute(deleteSql, [Id]);
 
-      return "Blog post deleted successfully"; // Return a success message
+      return { success: true, message: "Blog post deleted successfully" }; // Return a success message
     } catch (error) {
       throw error;
     }

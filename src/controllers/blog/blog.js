@@ -132,12 +132,17 @@ async function deleteBlogPost(req, res) {
 
     const resp = await BlogPost.deleteByBlogPostId(id);
 
-    return res.status(200).json({ resp });
+    if (!resp.success) {
+      return res.status(400).json({ message: resp.message }); // Return a 400 status with the error message
+    }
+
+    return res.status(200).json({ message: resp.message });
   } catch (error) {
     console.error("Error deleting blog post by id:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 }
+
 module.exports = {
   createBlogPost,
   updateBlogPost,

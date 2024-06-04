@@ -10,7 +10,11 @@ const { verifyAccessToken } = require("../../helpers/jwt_helper");
 const subtopicRouter = express.Router();
 
 subtopicRouter.post("/subtopics", verifyAccessToken, createSubtopic);
-subtopicRouter.get("/subtopics/:topic_id", verifyAccessToken, getSubtopics);
+subtopicRouter.get(
+  "/subtopics/:topic_id",
+  // verifyAccessToken,
+  getSubtopics
+);
 subtopicRouter.patch(
   "/subtopics/:subtopic_id",
   verifyAccessToken,

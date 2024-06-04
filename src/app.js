@@ -80,7 +80,7 @@ if (process.env.NODE_ENV === "prod") {
 
 //limit request from same API
 const limiter = rateLimit({
-  max: 100,
+  max: 1000,
   windowMs: 60 * 60 * 1000,
   message: "Too many request, please try again after an hour",
 });
