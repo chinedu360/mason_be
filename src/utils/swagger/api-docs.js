@@ -9,6 +9,9 @@ const subtopicDoc = require("../../routes/subtopic/subtopic.swagger");
 const calenderDoc = require("../../routes/calender/calender.swagger");
 const officerDoc = require("../../routes/officer/officer.swagger");
 const memberDoc = require("../../routes/member/member.swagger");
+const aboutRouteDoc = require("../../routes/about/about.swagger");
+const videoRouteDoc = require("../../routes/video/video.swagger");
+const eventRouteDoc = require("../../routes/events/events.swagger");
 
 const swaggerDocumentation = {
   openapi: "3.0.0",
@@ -39,6 +42,9 @@ const swaggerDocumentation = {
     ...subtopicDoc,
     ...officerDoc,
     ...memberDoc,
+    ...aboutRouteDoc,
+    ...videoRouteDoc,
+    ...eventRouteDoc,
   },
   components: {
     securitySchemes: {

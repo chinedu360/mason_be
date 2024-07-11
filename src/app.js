@@ -37,6 +37,9 @@ const subtopicRouter = require("./routes/subtopic/subtopic");
 const calenderRouter = require("./routes/calender/calender");
 const officeRouter = require("./routes/officer/officer");
 const memberRouter = require("./routes/member/member");
+const aboutPostRouter = require("./routes/about/about");
+const videoRouter = require("./routes/video/video");
+const eventRouter = require("./routes/events/events");
 
 const app = express();
 
@@ -162,6 +165,9 @@ app.use("/api/v1/", subtopicRouter);
 app.use("/api/v1/", calenderRouter);
 app.use("/api/v1/", officeRouter);
 app.use("/api/v1/", memberRouter);
+app.use("/api/v1/", aboutPostRouter);
+app.use("/api/v1/", videoRouter);
+app.use("/api/v1/", eventRouter);
 
 app.use((req, res, next) => {
   // const error = new Error('Not Found')
